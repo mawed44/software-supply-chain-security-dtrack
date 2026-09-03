@@ -1,0 +1,83 @@
+name: CI et SBOM
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: "22"
+  DTRACK_HOSTNAME: ${{ secrets.DTRACK_HOSTNAME }}
+  DTRACK_API_KEY: ${{ secrets.DTRACK_API_KEY }}
+
+jobs:
+  test:
+    name: Tester l'application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v6
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Installer les dependances
+        run: npm ci
+
+      - name: Executer les tests
+        run: npm test
+
+  sbom:
+    name: Generer et publier le SBOM
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v6
+
+      - name: Installer Syft
+        id: syft
+        uses: anchore/sbom-action/download-syft@v0
+
+      - name: Generer bom.json avec Syft
+        shell: bash
+        run: >-
+          "${{ steps.syft.outputs.cmd }}" scan dir:.
+          --source-name syft-sbom-demo
+          --source-version "${GITHUB_SHA::12}"
+          -o cyclonedx-json@1.6=bom.json
+
+      - name: Conserver le SBOM comme artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bom.cyclonedx.json
+          path: bom.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publier dans Dependency-Track
+        if: ${{ github.event_name != 'pull_request' && env.DTRACK_HOSTNAME != '' && env.DTRACK_API_KEY != '' }}
+        uses: DependencyTrack/gh-upload-sbom@v3
+        with:
+          protocol: ${{ secrets.DTRACK_PROTOCOL || 'https' }}
+          serverhostname: ${{ env.DTRACK_HOSTNAME }}
+          port: ${{ secrets.DTRACK_PORT || '443' }}
+          apikey: ${{ env.DTRACK_API_KEY }}
+          projectname: syft-sbom-demo
+          projectversion: ${{ github.ref_name }}
+          projecttags: portfolio,syft,github-actions
+          autocreate: true
+          bomfilename: bom.json
+          isLatest: true
+
+      - name: Expliquer pourquoi la publication est ignoree
+        if: ${{ github.event_name != 'pull_request' && (env.DTRACK_HOSTNAME == '' || env.DTRACK_API_KEY == '') }}
+        run: echo "::notice::SBOM genere, mais non publie. Configurez DTRACK_HOSTNAME et DTRACK_API_KEY dans les secrets GitHub."

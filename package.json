@@ -1,0 +1,16 @@
+{
+  "name": "syft-sbom-demo",
+  "version": "1.0.0",
+  "description": "Petite API de demonstration pour automatiser un SBOM CycloneDX avec Syft.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "engines": { "node": ">=22" },
+  "dependencies": {
+    "express": "4.17.1",
+    "lodash": "4.17.20"
+  },
+  "license": "MIT"
+}
