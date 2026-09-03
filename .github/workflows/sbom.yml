@@ -63,7 +63,7 @@ jobs:
           retention-days: 30
 
       - name: Publish to Dependency-Track
-        if: ${{ github.event_name != 'pull_request' && env.DTRACK_HOSTNAME != '' && env.DTRACK_API_KEY != '' }}
+        if: ${{ env.DTRACK_HOSTNAME != '' && env.DTRACK_API_KEY != '' }}
         env:
           ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
         uses: DependencyTrack/gh-upload-sbom@v3
