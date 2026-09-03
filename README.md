@@ -2,11 +2,11 @@
 
 Automatisation de la génération et de l'analyse d'un **SBOM CycloneDX** avec **Syft**, **OWASP Dependency-Track**, **Docker Compose** et **GitHub Actions**.
 
-Ce projet contient une petite API Node.js dont les dépendances sont inventoriées automatiquement par Syft. Le fichier `bom.json` obtenu est conservé comme artefact du pipeline puis envoyé à Dependency-Track, qui centralise les composants, les licences et les vulnérabilités connues.
+Ce projet contient une API Node.js dont les dépendances sont inventoriées automatiquement par Syft. Le fichier `bom.json` obtenu est conservé comme artefact du pipeline puis envoyé à Dependency-Track, qui centralise les composants, les licences et les vulnérabilités connues.
 
 ## Aperçu du tableau de bord Dependency-Track
 
-<!-- Insérer ici la capture d'écran du tableau de bord Dependency-Track. -->
+![Apercu ashboard Grafana](screenshots/image-sbom2.png)
 
 ## Problématique
 
@@ -39,14 +39,6 @@ flowchart LR
     BOM -->|API| DT[Dependency-Track]
     DT --> VULN[CVE et risques]
 ```
-
-| Composant | Fonction | Accès |
-|---|---|---|
-| API Node.js | Application de démonstration analysée par Syft | `http://localhost:3000` |
-| Syft | Génère l'inventaire des composants logiciels | Ligne de commande / CI |
-| Dependency-Track API | Importe et analyse les SBOM | `http://localhost:8081` |
-| Dependency-Track Frontend | Affiche les composants, licences et vulnérabilités | `http://localhost:8080` |
-| GitHub Actions | Automatise les tests, la génération et la publication | Onglet **Actions** du dépôt |
 
 ## Prérequis
 
@@ -123,8 +115,7 @@ Le SBOM d'exemple présent dans ce dépôt contient notamment :
 
 Le workflow [`.github/workflows/sbom.yml`](.github/workflows/sbom.yml) est déclenché :
 
-- lors d'un push sur `main` ;
-- lors d'une pull request vers `main` ;
+- lors d'une pull request sur `main` ;
 - manuellement depuis l'onglet **Actions**.
 
 Il exécute les étapes suivantes :
@@ -136,8 +127,6 @@ Il exécute les étapes suivantes :
 5. génération de `bom.json` au format CycloneDX 1.6 ;
 6. publication du SBOM comme artefact GitHub ;
 7. envoi à Dependency-Track lorsque les secrets sont disponibles.
-
-Les pull requests produisent un SBOM, mais ne l'envoient pas à Dependency-Track afin de ne pas exposer les secrets aux contributions externes.
 
 ## Configuration des secrets GitHub
 
@@ -177,22 +166,6 @@ Après l'import du SBOM, Dependency-Track permet de consulter :
 - l'évolution des vulnérabilités au fil des nouveaux imports.
 
 La première synchronisation des sources de vulnérabilités peut prendre du temps. Les résultats apparaissent progressivement dans les onglets **Components**, **Audit Vulnerabilities** et **Policy Violations**.
-
-## Fichiers principaux
-
-| Fichier | Rôle |
-|---|---|
-| `src/app.js` | Définit les routes de l'API Node.js |
-| `src/server.js` | Démarre le serveur HTTP |
-| `test/app.test.js` | Vérifie automatiquement les routes de l'API |
-| `package.json` | Déclare les dépendances analysées par Syft |
-| `package-lock.json` | Verrouille les versions directes et transitives |
-| `Dockerfile` | Construit l'image de l'application de démonstration |
-| `docker-compose.yml` | Déploie l'API et l'interface de Dependency-Track |
-| `.syft.yaml` | Configure l'analyse Syft |
-| `.github/workflows/sbom.yml` | Automatise les tests et la publication du SBOM |
-| `bom.json` | Exemple de SBOM CycloneDX généré |
-| `screenshots/` | Contient les captures destinées au portfolio |
 
 ## Arrêt des services
 
